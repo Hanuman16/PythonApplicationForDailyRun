@@ -59,19 +59,27 @@ def load_trading_log():
     
     return pd.DataFrame(columns=[
         'Date', 'Ticker', 'Buy_Price', 'Current_Price', 'Sell_Price', 
-        'PnL', 'Status', 'Buy_Prob', 'Sell_Signal_Time'
+        'PnL', 'Status', 'Buy_Prob', 'Sell_Signal_Time', 'Investment_Amount',
+        'Profit_Amount', 'Return_Percentage'
     ])
 
 def save_trading_log(df):
     """Save trading log to Excel file"""
     try:
+        # Calculate profit amounts before saving
+        if 'Investment_Amount' not in df.columns:
+            df['Investment_Amount'] = 100000  # 1 lakh per stock
+            
+        # Calculate profit amount and return percentage
+        df['Profit_Amount'] = df['PnL'] * (df['Investment_Amount'] / df['Buy_Price'])
+        df['Return_Percentage'] = (df['PnL'] / df['Buy_Price']) * 100
+        
         df.to_excel(LOG_FILE, index=False)
         print(f"✓ Log saved to {LOG_FILE}")
         return True
     except Exception as e:
         print(f"✗ Error saving trading log: {e}")
         return False
-
 
 def fetch_latest_data(ticker, period="1y", interval="1d"):
     """Fetch stock data with enhanced error handling and retry logic
@@ -352,6 +360,13 @@ def run_discovery_mode():
             print(f"  ✓ BUY Signal: {ticker}, Probability: {tomorrow_buy_prob:.4f}")
             
         elif tomorrow_prediction == 1 and tomorrow_buy_prob >= 0.5:
+            results.append((
+                ticker,
+                tomorrow_buy_prob, 
+                current_price,
+                tomorrow_prediction,
+                "BUY"
+            ))
             print(f"  ⚠️  WEAK BUY (Ignored): {ticker}, Probability: {tomorrow_buy_prob:.4f} (below {buy_threshold} threshold)")
             
         elif tomorrow_prediction == 1:
@@ -401,7 +416,10 @@ def run_discovery_mode():
                     'Status': 'OPEN',
                     'Buy_Prob': prob,
                     'Signal_Type': signal_type,
-                    'Sell_Signal_Time': ''
+                    'Sell_Signal_Time': '',
+                    'Investment_Amount': 100000,  # 1 lakh per stock
+                    'Profit_Amount': 0.0,
+                    'Return_Percentage': 0.0
                 })
                 print(f"  ➕ Adding to portfolio: {ticker} ({signal_type}, Prob: {prob:.4f})")
         
@@ -421,32 +439,54 @@ def run_discovery_mode():
         print("No valid buy signals found today (none met probability thresholds).")
     
     print(f"{'='*60}")
-  
+
 def calculate_profits(df_log):
-    """Calculate today's profit and overall profit"""
+    """Calculate today's profit and overall profit with accuracy metrics"""
     today_str = get_ist_time().strftime('%Y-%m-%d')
     
-    # Today's profit (only closed trades for today)
-    today_closed = df_log[(df_log['Date'] == today_str) & (df_log['Status'] == 'CLOSED')]
-    today_profit = today_closed['PnL'].sum() if not today_closed.empty else 0
+    # Today's trades
+    today_trades = df_log[df_log['Date'] == today_str]
+    today_closed = today_trades[today_trades['Status'] == 'CLOSED']
     
-    # Overall profit (all closed trades across all days)
+    # Overall trades
     all_closed = df_log[df_log['Status'] == 'CLOSED']
-    overall_profit = all_closed['PnL'].sum() if not all_closed.empty else 0
+    all_trades = df_log
     
-    return today_profit, overall_profit
+    # Profit calculations
+    today_profit = today_closed['Profit_Amount'].sum() if not today_closed.empty else 0
+    overall_profit = all_closed['Profit_Amount'].sum() if not all_closed.empty else 0
+    
+    # Accuracy calculations
+    today_profitable = today_closed[today_closed['Profit_Amount'] > 0]
+    overall_profitable = all_closed[all_closed['Profit_Amount'] > 0]
+    
+    today_accuracy = len(today_profitable) / len(today_closed) * 100 if len(today_closed) > 0 else 0
+    overall_accuracy = len(overall_profitable) / len(all_closed) * 100 if len(all_closed) > 0 else 0
+    
+    return {
+        'today_profit': today_profit,
+        'overall_profit': overall_profit,
+        'today_accuracy': today_accuracy,
+        'overall_accuracy': overall_accuracy,
+        'today_profitable_trades': len(today_profitable),
+        'today_total_trades': len(today_closed),
+        'overall_profitable_trades': len(overall_profitable),
+        'overall_total_trades': len(all_closed),
+        'today_trades_suggested': len(today_trades),
+        'overall_trades_suggested': len(all_trades)
+    }
 
 def send_daily_summary_email(df_log, sender_email, recipients):
-    """Send comprehensive daily summary email with profit tracking"""
+    """Send comprehensive daily summary email with profit tracking and accuracy"""
     today_str = get_ist_time().strftime('%Y-%m-%d')
     ist = ZoneInfo("Asia/Kolkata")
     now_ist = datetime.now(ist)
     
+    # Calculate all profit metrics
+    profit_metrics = calculate_profits(df_log)
+    
     # Filter today's data
     today_data = df_log[df_log['Date'] == today_str]
-    
-    # Calculate profits
-    today_profit, overall_profit = calculate_profits(df_log)
     
     # Prepare data for email
     closed_trades = today_data[today_data['Status'] == 'CLOSED']
@@ -462,11 +502,15 @@ def send_daily_summary_email(df_log, sender_email, recipients):
             .profit-positive {{ color: #27ae60; font-weight: bold; }}
             .profit-negative {{ color: #e74c3c; font-weight: bold; }}
             .profit-neutral {{ color: #7f8c8d; font-weight: bold; }}
+            .accuracy-high {{ color: #27ae60; font-weight: bold; }}
+            .accuracy-medium {{ color: #f39c12; font-weight: bold; }}
+            .accuracy-low {{ color: #e74c3c; font-weight: bold; }}
             table {{ width: 100%; border-collapse: collapse; margin: 20px 0; }}
             th, td {{ padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }}
             th {{ background-color: #f8f9fa; }}
             .section {{ margin: 30px 0; }}
             .section-title {{ font-size: 18px; font-weight: bold; margin-bottom: 15px; color: #2c3e50; }}
+            .metric-card {{ background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 10px 0; }}
         </style>
     </head>
     <body>
@@ -476,18 +520,38 @@ def send_daily_summary_email(df_log, sender_email, recipients):
         </div>
         
         <div class="section">
-            <div class="section-title">💰 Profit Summary</div>
+            <div class="section-title">📈 Prediction Accuracy</div>
+            <div class="metric-card">
+                <strong>Today's Accuracy:</strong><br>
+                <span class="{'accuracy-high' if profit_metrics['today_accuracy'] > 70 else 'accuracy-medium' if profit_metrics['today_accuracy'] > 50 else 'accuracy-low'}">
+                    {profit_metrics['today_profitable_trades']}/{profit_metrics['today_total_trades']} 
+                    ({profit_metrics['today_accuracy']:.1f}%)
+                </span><br>
+                <small>{profit_metrics['today_trades_suggested']} stocks suggested today</small>
+            </div>
+            <div class="metric-card">
+                <strong>Overall Accuracy:</strong><br>
+                <span class="{'accuracy-high' if profit_metrics['overall_accuracy'] > 70 else 'accuracy-medium' if profit_metrics['overall_accuracy'] > 50 else 'accuracy-low'}">
+                    {profit_metrics['overall_profitable_trades']}/{profit_metrics['overall_total_trades']} 
+                    ({profit_metrics['overall_accuracy']:.1f}%)
+                </span><br>
+                <small>{profit_metrics['overall_trades_suggested']} total stocks suggested</small>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">💰 Profit Summary (₹1 Lakh per stock)</div>
             <table>
                 <tr>
-                    <td><strong>Today's Profit (Closed Trades):</strong></td>
-                    <td class="{'profit-positive' if today_profit > 0 else 'profit-negative' if today_profit < 0 else 'profit-neutral'}">
-                        ₹{today_profit:.2f}
+                    <td><strong>Today's Profit:</strong></td>
+                    <td class="{'profit-positive' if profit_metrics['today_profit'] > 0 else 'profit-negative' if profit_metrics['today_profit'] < 0 else 'profit-neutral'}">
+                        ₹{profit_metrics['today_profit']:,.2f}
                     </td>
                 </tr>
                 <tr>
-                    <td><strong>Overall Profit (All Time):</strong></td>
-                    <td class="{'profit-positive' if overall_profit > 0 else 'profit-negative' if overall_profit < 0 else 'profit-neutral'}">
-                        ₹{overall_profit:.2f}
+                    <td><strong>Overall Profit:</strong></td>
+                    <td class="{'profit-positive' if profit_metrics['overall_profit'] > 0 else 'profit-negative' if profit_metrics['overall_profit'] < 0 else 'profit-neutral'}">
+                        ₹{profit_metrics['overall_profit']:,.2f}
                     </td>
                 </tr>
                 <tr>
@@ -495,11 +559,11 @@ def send_daily_summary_email(df_log, sender_email, recipients):
                     <td>{len(today_data)}</td>
                 </tr>
                 <tr>
-                    <td><strong>Closed Trades:</strong></td>
+                    <td><strong>Closed Trades Today:</strong></td>
                     <td>{len(closed_trades)}</td>
                 </tr>
                 <tr>
-                    <td><strong>Open Trades:</strong></td>
+                    <td><strong>Open Trades (Carry Forward):</strong></td>
                     <td>{len(open_trades)}</td>
                 </tr>
             </table>
@@ -518,6 +582,7 @@ def send_daily_summary_email(df_log, sender_email, recipients):
                         <th>Buy Price</th>
                         <th>Sell Price</th>
                         <th>P&L</th>
+                        <th>Profit Amount</th>
                         <th>Return %</th>
                         <th>Sell Time</th>
                     </tr>
@@ -533,6 +598,7 @@ def send_daily_summary_email(df_log, sender_email, recipients):
                         <td>₹{trade['Buy_Price']:.2f}</td>
                         <td>₹{trade['Sell_Price']:.2f}</td>
                         <td class="{pnl_class}">₹{trade['PnL']:.2f}</td>
+                        <td class="{pnl_class}">₹{trade['Profit_Amount']:,.2f}</td>
                         <td class="{pnl_class}">{return_pct:.2f}%</td>
                         <td>{trade['Sell_Signal_Time']}</td>
                     </tr>
@@ -555,6 +621,7 @@ def send_daily_summary_email(df_log, sender_email, recipients):
                         <th>Buy Price</th>
                         <th>Current Price</th>
                         <th>Current P&L</th>
+                        <th>Unrealized Profit</th>
                         <th>Return %</th>
                     </tr>
                 </thead>
@@ -562,6 +629,7 @@ def send_daily_summary_email(df_log, sender_email, recipients):
         """
         for _, trade in open_trades.iterrows():
             current_pnl = trade['Current_Price'] - trade['Buy_Price']
+            unrealized_profit = trade['Profit_Amount']  # Already calculated in save_trading_log
             return_pct = (current_pnl / trade['Buy_Price']) * 100
             pnl_class = "profit-positive" if current_pnl > 0 else "profit-negative" if current_pnl < 0 else "profit-neutral"
             html_body += f"""
@@ -570,6 +638,7 @@ def send_daily_summary_email(df_log, sender_email, recipients):
                         <td>₹{trade['Buy_Price']:.2f}</td>
                         <td>₹{trade['Current_Price']:.2f}</td>
                         <td class="{pnl_class}">₹{current_pnl:.2f}</td>
+                        <td class="{pnl_class}">₹{unrealized_profit:,.2f}</td>
                         <td class="{pnl_class}">{return_pct:.2f}%</td>
                     </tr>
             """
@@ -586,7 +655,7 @@ def send_daily_summary_email(df_log, sender_email, recipients):
     
     # Build the email
     msg = EmailMessage()
-    msg["Subject"] = f"Daily Trading Summary - {today_str}"
+    msg["Subject"] = f"Daily Trading Summary - {today_str} | Accuracy: {profit_metrics['today_accuracy']:.1f}% | Profit: ₹{profit_metrics['today_profit']:,.2f}"
     msg["From"] = formataddr(("Quant Signals Bot", sender_email))
     msg["To"] = ", ".join(recipients)
     msg.add_alternative(html_body, subtype="html")
@@ -616,7 +685,7 @@ def send_daily_summary_email(df_log, sender_email, recipients):
     except Exception as e:
         print(f"✗ Failed to send daily summary email: {e}")
         return False
-    
+        
 def run_monitoring_mode():
     """Run at 10:00 AM, 10:30 AM, etc. - Monitor existing positions"""
     print(">> MODE: MONITORING - Tracking existing positions with ORIGINAL ML logic")
