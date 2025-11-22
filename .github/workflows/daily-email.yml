@@ -3,20 +3,21 @@ name: Daily Trading Bot
 on:
   schedule:
     # Times are in UTC! India is UTC+5:30
-    - cron: '0 4 * * 1-5'   # 9:30 AM IST (Discovery)
-    - cron: '30 4 * * 1-5'  # 10:00 AM IST (Monitoring)
-    - cron: '45 4 * * 1-5'  # 10:15 AM IST (Monitoring)
-    - cron: '0 5 * * 1-5'   # 10:30 AM IST (Monitoring)
-    - cron: '30 5 * * 1-5'  # 11:00 AM IST (Monitoring)
-    - cron: '45 5 * * 1-5'  # 11:15 AM IST (Monitoring)
-    - cron: '0 6 * * 1-5'   # 11:30 AM IST (Monitoring)
-    - cron: '30 6 * * 1-5'  # 12:00 PM IST (Monitoring)
-    - cron: '0 7 * * 1-5'   # 12:30 PM IST (Monitoring)
-    - cron: '30 7 * * 1-5'  # 1:00 PM IST (Monitoring)
-    - cron: '0 8 * * 1-5'   # 1:30 PM IST (Monitoring)
-    - cron: '30 8 * * 1-5'  # 2:00 PM IST (Monitoring)
-    - cron: '0 9 * * 1-5'   # 2:30 PM IST (Monitoring)
-    - cron: '30 9 * * 1-5'  # 3:00 PM IST (Monitoring + Daily Summary)
+    - cron: '45 3 * * 1-5'   # 9:15 AM IST (Discovery)
+    - cron: '5 4 * * 1-5'    # 9:35 AM IST (Monitoring)
+    - cron: '15 4 * * 1-5'   # 9:45 AM IST (Monitoring)
+    - cron: '30 4 * * 1-5'   # 10:00 AM IST (Monitoring)
+    - cron: '45 4 * * 1-5'   # 10:15 AM IST (Monitoring)
+    - cron: '0 5 * * 1-5'    # 10:30 AM IST (Monitoring)
+    - cron: '15 5 * * 1-5'   # 10:45 AM IST (Monitoring)
+    - cron: '30 5 * * 1-5'   # 11:00 AM IST (Monitoring)
+    - cron: '45 5 * * 1-5'   # 11:15 AM IST (Monitoring)
+    - cron: '0 6 * * 1-5'    # 11:30 AM IST (Monitoring)
+    - cron: '30 6 * * 1-5'   # 12:00 PM IST (Monitoring)
+    - cron: '0 7 * * 1-5'    # 12:30 PM IST (Monitoring)
+    - cron: '30 7 * * 1-5'   # 1:00 PM IST (Monitoring)
+    - cron: '0 9 * * 1-5'    # 2:30 PM IST (Monitoring)
+    - cron: '30 9 * * 1-5'   # 3:00 PM IST (Monitoring + Daily Summary)
   workflow_dispatch:
 
 permissions:
