@@ -39,7 +39,7 @@ jobs:
           SMTP_USER: ${{ secrets.SMTP_USER }}
           SMTP_PASS: ${{ secrets.SMTP_PASS }}
           MAIL_RECIPIENTS: ${{ secrets.MAIL_RECIPIENTS }}
-        run: python trading_bot.py
+        run: python PythonApplication1.py
       - name: Commit and Push Excel Log
         run: |
           git config --global user.name "GitHub Actions Bot"
