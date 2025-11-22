@@ -1,32 +1,49 @@
-name: Daily Run Python Script
+name: Daily Trading Bot
 
 on:
   schedule:
-    # Runs every day at 12:35 UTC (18:05 IST)
-    - cron: '35 12 * * 1-5'
-  workflow_dispatch:  # allow manual runs
+    # Times are in UTC! India is UTC+5:30
+    - cron: '0 4 * * 1-5'   # 9:30 AM IST (Discovery)
+    - cron: '30 4 * * 1-5'  # 10:00 AM IST (Monitoring)
+    - cron: '45 4 * * 1-5'  # 10:15 AM IST (Monitoring)
+    - cron: '0 5 * * 1-5'   # 10:30 AM IST (Monitoring)
+    - cron: '30 5 * * 1-5'  # 11:00 AM IST (Monitoring)
+    - cron: '45 5 * * 1-5'  # 11:15 AM IST (Monitoring)
+    - cron: '0 6 * * 1-5'   # 11:30 AM IST (Monitoring)
+    - cron: '30 6 * * 1-5'  # 12:00 PM IST (Monitoring)
+    - cron: '0 7 * * 1-5'   # 12:30 PM IST (Monitoring)
+    - cron: '30 7 * * 1-5'  # 1:00 PM IST (Monitoring)
+    - cron: '0 8 * * 1-5'   # 1:30 PM IST (Monitoring)
+    - cron: '30 8 * * 1-5'  # 2:00 PM IST (Monitoring)
+    - cron: '0 9 * * 1-5'   # 2:30 PM IST (Monitoring)
+    - cron: '30 9 * * 1-5'  # 3:00 PM IST (Monitoring + Daily Summary)
+  workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
-  run-script:
+  run-trading-bot:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
+      - name: Checkout repository
+        uses: actions/checkout@v3
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v4
         with:
-          python-version: '3.x'
-
+          python-version: '3.9'
       - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-
-      - name: Run script
+        run: pip install pandas numpy yfinance xgboost scikit-learn imbalanced-learn openpyxl
+      - name: Run Trading Script
         env:
           SMTP_USER: ${{ secrets.SMTP_USER }}
           SMTP_PASS: ${{ secrets.SMTP_PASS }}
           MAIL_RECIPIENTS: ${{ secrets.MAIL_RECIPIENTS }}
+        run: python trading_bot.py
+      - name: Commit and Push Excel Log
         run: |
-          python PythonApplication1.py
+          git config --global user.name "GitHub Actions Bot"
+          git config --global user.email "actions@github.com"
+          git pull
+          git add trading_log.xlsx
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Update Trading Log [skip ci]" && git push)
