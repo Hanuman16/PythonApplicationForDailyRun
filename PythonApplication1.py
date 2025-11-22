@@ -22,7 +22,7 @@ from zoneinfo import ZoneInfo  # Python 3.9+
 # ==========================================
 # CONFIGURATION & STATE MANAGEMENT
 # ==========================================
-LOG_FILE = "trading_log1.xlsx"
+LOG_FILE = "trading_log.xlsx"
 IST = ZoneInfo("Asia/Kolkata")
 
 # Define the list of NSE tickers (example subset for testing)
