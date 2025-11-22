@@ -259,8 +259,8 @@ def send_monitoring_email(updates, sender_email, recipients):
 def fetch_latest_data(ticker, period="1y", interval="1d"):
     """Fetch stock data with enhanced error handling and retry logic
     (YOUR ORIGINAL FUNCTION - COMPLETELY UNCHANGED)"""
-    max_retries = 3
-    retry_delay = 2
+    max_retries = 1
+    retry_delay = 1
 
     for attempt in range(max_retries):
         try:
