@@ -18,6 +18,7 @@ from email.message import EmailMessage
 from email.utils import formataddr
 from datetime import datetime
 from zoneinfo import ZoneInfo  # Python 3.9+
+import json
 
 # ==========================================
 # CONFIGURATION & STATE MANAGEMENT
