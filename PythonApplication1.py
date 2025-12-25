@@ -103,8 +103,8 @@ def save_trading_log(df):
 def fetch_latest_data(ticker, period="1y", interval="1d"):
     """Fetch stock data with enhanced error handling and retry logic
     (YOUR ORIGINAL FUNCTION - COMPLETELY UNCHANGED)"""
-    max_retries = 1
-    retry_delay = 1
+    max_retries = 0
+    retry_delay = 0
 
     for attempt in range(max_retries):
         try:
