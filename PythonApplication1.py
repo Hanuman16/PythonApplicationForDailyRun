@@ -382,7 +382,7 @@ def run_discovery_mode():
             print(f"  ✗ No clear signal: {ticker}, Prediction: {tomorrow_prediction}, Prob: {tomorrow_buy_prob:.4f}")
 
     # Your original sorting logic - but now only including proper buy signals
-    top_buys = sorted(results, key=lambda x: x[1], reverse=True)[:10]
+    top_buys = sorted(results, key=lambda x: x[1], reverse=True)[:50]
     
     print(f"\n{'='*60}")
     print("DISCOVERY SUMMARY")
