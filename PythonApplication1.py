@@ -805,13 +805,13 @@ def main():
     is_last_run = (current_hour == 15 and current_minute == 0)
     
     # AUTO-RESET: If market is closed (after 3:30 PM IST), reset for next day
-    if current_hour > 15 or (current_hour == 15 and current_minute >= 30):
-        print(">> Market closed - resetting for next day...")
-        df_log = df_log[df_log['Date'] != today_str]
-        save_trading_log(df_log)
-        todays_trades = pd.DataFrame()
-        print("✓ Reset complete - ready for discovery mode tomorrow")
-        return
+    # if current_hour > 15 or (current_hour == 15 and current_minute >= 30):
+    #     print(">> Market closed - resetting for next day...")
+    #     df_log = df_log[df_log['Date'] != today_str]
+    #     save_trading_log(df_log)
+    #     todays_trades = pd.DataFrame()
+    #     print("✓ Reset complete - ready for discovery mode tomorrow")
+    #     return
     
     if todays_trades.empty:
         # DISCOVERY MODE: No trades for today yet
