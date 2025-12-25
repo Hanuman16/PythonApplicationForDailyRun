@@ -452,11 +452,6 @@ def run_discovery_mode():
     for ticker in active_tickers:
         print(f"Analyzing {ticker}...")
         df = fetch_latest_data(ticker, period="1y", interval="1d")
-        
-        # Double-check data quality
-        if df.empty:
-            print(f"  ✗ Skipping {ticker} - no yearly data available")
-            continue
             
         # Check data sufficiency for ML
         if len(df) < 50:  # Minimum data points for meaningful analysis
