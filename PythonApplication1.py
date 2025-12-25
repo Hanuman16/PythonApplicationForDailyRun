@@ -25,6 +25,11 @@ from zoneinfo import ZoneInfo  # Python 3.9+
 LOG_FILE = "trading_log.xlsx"
 IST = ZoneInfo("Asia/Kolkata")
 
+# Track inactive/delisted stocks to skip them
+INACTIVE_STOCKS_FILE = "inactive_stocks.json"
+inactive_stocks = {}  # Format: {"TICKER.NS": {"last_checked": "2024-03-15", "fail_count": 3}}
+
+
 # Define the list of NSE tickers (example subset for testing)
 nse_tickers = ['HCLTECH.NS', 'OLAELEC.NS', 'BSE.NS', 'GODFRYPHLP.NS', 'HDFCBANK.NS', 'JPPOWER.NS', 'RALLIS.NS', 'INFY.NS', 'WAAREERTL.NS', 'FACT.NS', 'NEULANDLAB.NS', 'ETERNAL.NS', 'ANANTRAJ.NS', 'MIDHANI.NS', 'M&M.NS', 'RELIANCE.NS', 'TCS.NS', 'SBIN.NS', 'HEROMOTOCO.NS', 'DMART.NS', 'BHARTIARTL.NS', 'WAAREEENER.NS', 'KOTAKBANK.NS', 'ICICIBANK.NS', 'PEL.NS', 'SUNPHARMA.NS', 'TATATECH.NS', 'LT.NS', 'AXISBANK.NS', 'TATAELXSI.NS', 'SWIGGY.NS', 'TEJASNET.NS', 'BEL.NS', 'PAYTM.NS', 'AARTIDRUGS.NS', 'AMBER.NS', 'TATAMOTORS.NS', 'CDSL.NS', 'GRSE.NS', 'PGEL.NS', 'SUZLON.NS', 'JIOFIN.NS', 'TECHM.NS', 'EICHERMOT.NS', 'PPLPHARMA.NS', 'HAL.NS', 'HDFCAMC.NS', 'HSCL.NS', 'GLENMARK.NS', 'CHOLAFIN.NS', 'INDIGO.NS', 'MCX.NS', 'RVNL.NS', 'ITC.NS', 'BAJFINANCE.NS', 'HINDUNILVR.NS', 'APOLLOHOSP.NS', 'MAZDOCK.NS', 'PRESTIGE.NS', 'INDUSINDBK.NS', 'CUMMINSIND.NS', 'SOBHA.NS', 'DIXON.NS', 'COFORGE.NS', 'HINDALCO.NS', 'CRIZAC.NS', 'BIOCON.NS', 'HINDPETRO.NS', 'PERSISTENT.NS', 'YESBANK.NS', 'POLYCAB.NS', 'BANDHANBNK.NS', 'TRENT.NS', 'BALKRISIND.NS', 'CANBK.NS', 'BOSCHLTD.NS', 'TVSMOTOR.NS', 'BAJAJ-AUTO.NS', 'RAILTEL.NS', 'AIIL.NS', 'SWARAJENG.NS', 'IDEA.NS', 'NTPC.NS', 'TATASTEEL.NS', 'ANGELONE.NS', 'MOTHERSON.NS', 'ABB.NS', 'BDL.NS', 'EIEL.NS', 'SONACOMS.NS', 'DEEPAKFERT.NS', 'VBL.NS', 'INDHOTEL.NS', 'BEML.NS', 'ICICIPRULI.NS', 'WIPRO.NS', 'PNB.NS', 'VEDL.NS', 'ADANIGREEN.NS', 'ADANIPOWER.NS', 'HDFCLIFE.NS', 'PATANJALI.NS', 'TITAN.NS', 'IDFCFIRSTB.NS', 'ENRIN.NS', 'NAUKRI.NS', 'SOLARINDS.NS', 'SBILIFE.NS', 'SHRIRAMFIN.NS', 'CAMS.NS', 'DLF.NS', 'VOLTAS.NS', 'TEGA.NS', 'TRANSRAILL.NS', 'ZEEL.NS', 'ANANDRATHI.NS', 'COCHINSHIP.NS', 'BELRISE.NS', 'LUPIN.NS', 'RTNPOWER.NS', 'GODREJPROP.NS', 'BANKBARODA.NS', 'SILVERBEES.NS', 'FORTIS.NS', 'AUBANK.NS', 'NMDC.NS', 'POWERGRID.NS', 'BAJAJFINSV.NS', 'ONGC.NS', 'BPCL.NS', 'GILLETTE.NS', 'LAURUSLABS.NS', 'NIFTYBEES.NS', 'WOCKPHARMA.NS', 'AEROFLEX.NS', 'CIPLA.NS', 'POWERINDIA.NS', 'FORCEMOT.NS', 'VMM.NS', 'PREMIERENE.NS', 'ASHAPURMIN.NS', 'ULTRACEMCO.NS', 'GLAND.NS', 'CHENNPETRO.NS', 'COALINDIA.NS', 'LICHSGFIN.NS', 'MAHABANK.NS', 'PFC.NS', 'NBCC.NS', 'SBICARD.NS', 'ICICIGI.NS', 'MARUTI.NS', 'AADHARHFC.NS', 'NATCOPHARM.NS', 'KALYANKJIL.NS', 'ASHOKLEY.NS', 'SAGILITY.NS', 'KPITTECH.NS', 'BHARATFORG.NS', 'RBLBANK.NS', 'KEI.NS', 'BLUESTARCO.NS', 'MANKIND.NS', 'DEVYANI.NS', 'DRREDDY.NS', 'MRF.NS', 'IRFC.NS', 'MOBIKWIK.NS', 'JSWENERGY.NS', 'HEXT.NS', 'TATAPOWER.NS', 'STLTECH.NS', 'TORNTPHARM.NS', 'UNIONBANK.NS', 'GAIL.NS', 'COLPAL.NS', 'CUPID.NS', 'GRAPHITE.NS', 'ASIANPAINT.NS', 'RECLTD.NS', 'SYNGENE.NS', 'IREDA.NS', 'INOXWIND.NS', 'VIPIND.NS', 'PCJEWELLER.NS', 'UPL.NS', 'TRAVELFOOD.NS', 'CEATLTD.NS', 'NAZARA.NS', 'PETRONET.NS', 'FEDERALBNK.NS', 'DBREALTY.NS', 'PARADEEP.NS', 'OBEROIRLTY.NS', 'MFSL.NS', 'COROMANDEL.NS', 'GREAVESCOT.NS', 'HUDCO.NS', 'UNITDSPR.NS', 'NAM-INDIA.NS', 'SYRMA.NS', 'JMFINANCIL.NS', 'CROMPTON.NS', 'KPRMILL.NS', 'HINDZINC.NS', 'INDUSTOWER.NS', 'AJANTPHARM.NS', 'GMRAIRPORT.NS', 'NHPC.NS', 'SAMMAANCAP.NS', 'DIACABS.NS', 'LTF.NS', 'ASTRAZEN.NS', 'NESTLEIND.NS', 'KAYNES.NS', 'CGPOWER.NS', 'LODHA.NS', 'KARURVYSYA.NS', 'HAVELLS.NS', 'NESCO.NS', 'SIEMENS.NS', 'RCF.NS', 'KPIGREEN.NS', 'MPHASIS.NS', 'JSWSTEEL.NS', 'PCBL.NS', 'ADANIENT.NS', 'DCMSHRIRAM.NS', 'UJJIVANSFB.NS', 'MAXHEALTH.NS', 'JINDALSTEL.NS', 'SPANDANA.NS', 'ADANIPORTS.NS', 'MCLOUD.NS', 'KRN.NS', 'BLS.NS', 'NYKAA.NS', 'SIGNATURE.NS', 'SWSOLAR.NS', 'DELHIVERY.NS', 'AUROPHARMA.NS', 'SRF.NS', 'FIVESTAR.NS', 'NUVOCO.NS', 'ALKEM.NS', 'AMBUJACEM.NS',
               'ROSSARI.NS', 'GODREJCP.NS', 'ABDL.NS', 'CARTRADE.NS', 'PNBHOUSING.NS', 'KAJARIACER.NS', 'LTIM.NS', 'ASTERDM.NS', 'KIRLOSBROS.NS', 'HEG.NS', 'QUADFUTURE.NS', 'LTFOODS.NS', 'AWL.NS', 'POLICYBZR.NS', 'APLAPOLLO.NS', 'PVRINOX.NS', 'POWERMECH.NS', 'KFINTECH.NS', 'ALLCARGO.NS', 'DIVISLAB.NS', 'MANAPPURAM.NS', 'CHAMBLFERT.NS', 'HYUNDAI.NS', 'GOLDBEES.NS', 'TRITURBINE.NS', 'NCC.NS', 'MSUMI.NS', 'IOC.NS', 'OFSS.NS', 'CONCOR.NS', 'MOTILALOFS.NS', 'GRASIM.NS', 'IDBI.NS', 'SMLISUZU.NS', 'WEBELSOLAR.NS', 'GABRIEL.NS', 'AEGISVOPAK.NS', 'TITAGARH.NS', 'BHEL.NS', 'JSWINFRA.NS', 'RKFORGE.NS', 'INDIANB.NS', 'BAJAJHCARE.NS', 'AHLUCONT.NS', 'BANKINDIA.NS', 'MUTHOOTFIN.NS', 'CYIENT.NS', 'VINCOFE.NS', 'OIL.NS', 'BRITANNIA.NS', 'JBCHEPHARM.NS', 'IFCI.NS', 'COHANCE.NS', 'NTPCGREEN.NS', 'TIMKEN.NS', 'JAYNECOIND.NS', 'NH.NS', 'CESC.NS', 'ADANIENSOL.NS', 'WELCORP.NS', 'TIINDIA.NS', 'LALPATHLAB.NS', 'JGCHEM.NS', 'FIRSTCRY.NS', 'SAIL.NS', 'DABUR.NS', 'MANORAMA.NS', 'IIFL.NS', 'RAJOOENG.NS', 'IPCALAB.NS', 'SUPREMEIND.NS', 'SAMHI.NS', 'GMRP&UI.NS', 'AARTIIND.NS', 'PHOENIXLTD.NS', 'IRCON.NS', 'ACMESOLAR.NS', 'LIQUIDCASE.NS', 'MARICO.NS', 'SPMLINFRA.NS', 'DOMS.NS', 'SJVN.NS', 'ABCAPITAL.NS', 'PTC.NS', 'NETWEB.NS', 'VPRPL.NS', 'MAMATA.NS', 'IEX.NS', 'OSWALPUMPS.NS', 'TATACONSUM.NS', 'TANLA.NS', 'ASTRAL.NS', 'RADICO.NS', 'NUVAMA.NS', 'SUPRIYA.NS', 'SHAKTIPUMP.NS', 'BSOFT.NS', 'J&KBANK.NS', 'BAJAJHFL.NS', 'BAYERCROP.NS', 'AETHER.NS', 'NATIONALUM.NS', 'ENGINERSIN.NS', 'ITCHOTELS.NS', 'DCBBANK.NS', 'ELLEN.NS', 'GENUSPOWER.NS', 'RELIGARE.NS', 'PAGEIND.NS', 'ITBEES.NS', 'BAJAJHLDNG.NS', 'ZYDUSLIFE.NS', 'TIMETECHNO.NS', 'IRB.NS', 'PIIND.NS', 'ABFRL.NS', 'DIFFNKG.NS', 'PROTEAN.NS', 'NFL.NS', 'TFCILTD.NS', 'KPEL.NS', 'BOMDYEING.NS', 'JUSTDIAL.NS', 'INDGN.NS', 'KIRLOSENG.NS', 'LEMONTREE.NS', 'RAJESHEXPO.NS', 'JKCEMENT.NS', 'CGCL.NS', 'HFCL.NS', 'BRIGADE.NS', 'NORTHARC.NS', 'DATAPATTNS.NS', 'JUBLINGREA.NS', 'IGL.NS', 'APARINDS.NS', '360ONE.NS', 'TATACHEM.NS', 'PFOCUS.NS', 'GRAVITA.NS', 'AGIIL.NS', 'MTNL.NS', 'APOLLOTYRE.NS', 'HPL.NS', 'CERA.NS', 'QPOWER.NS', 'ONESOURCE.NS', 'AARTIPHARM.NS', 'CASTROLIND.NS', 'LAXMIDENTL.NS', 'ACUTAAS.NS', 'SUMICHEM.NS', 'HOMEFIRST.NS', 'STAR.NS', 'M&MFIN.NS', 'USHAMART.NS', 'SOUTHBANK.NS', 'SIGACHI.NS', 'HDFCSML250.NS', 'CHOICEIN.NS', 'APTUS.NS', 'TEXRAIL.NS', 'JYOTICNC.NS', 'VARROC.NS', 'HINDCOPPER.NS', 'GMDCLTD.NS', 'PRAJIND.NS', 'LICI.NS', 'BLUEJET.NS', 'WENDT.NS', 'PARAS.NS', 'VOLTAMP.NS', 'HBLENGINE.NS', 'TARIL.NS', 'RATEGAIN.NS', 'REDINGTON.NS', 'ABSLAMC.NS', 'PROSTARM.NS', 'SONATSOFTW.NS', 'PENIND.NS', 'ZENSARTECH.NS', 'LLOYDSENT.NS', 'JKLAKSHMI.NS', 'DHANUKA.NS', 'EXIDEIND.NS', 'ELECON.NS', 'STARHEALTH.NS', 'SAILIFE.NS', 'ABLBL.NS', 'POCL.NS', 'MRPL.NS', 'LTTS.NS', 'SERVOTECH.NS', 'ARKADE.NS', 'GARUDA.NS', 'RAYMONDREL.NS', 'FSL.NS', 'MARATHON.NS', 'BHARTIHEXA.NS', 'SHARDACROP.NS', 'GICRE.NS', 'DMCC.NS', 'METROPOLIS.NS', 'MEDANTA.NS', 'RUPA.NS', 'SENCO.NS', 'SHREECEM.NS', 'EDELWEISS.NS', 'IGARASHI.NS', 'CRAFTSMAN.NS', 'KEC.NS', 'TBOTEK.NS', 'LLOYDSENGG.NS', 'RAMCOCEM.NS', 'ATGL.NS', 'EMBDL.NS', 'PARAGMILK.NS', 'TECHNOE.NS', 'ACC.NS', 'MBAPL.NS', 'PSPPROJECT.NS', 'IRCTC.NS', 'KIRLOSIND.NS', 'BLACKBUCK.NS', 'DATAMATICS.NS', 'UNOMINDA.NS', 'YATHARTH.NS', 'OLECTRA.NS', 'UTIAMC.NS', 'ELECTCAST.NS', 'RTNINDIA.NS', 'EQUITASBNK.NS', 'IGIL.NS', 'APOLLO.NS', 'RAYMOND.NS', 'ARE&M.NS', 'PIDILITIND.NS', 'PAISALO.NS', 'TVSHLTD.NS', 'KIMS.NS', 'HDFCSILVER.NS', 'UCOBANK.NS', 'ESCORTS.NS', 'MASTEK.NS', 'ASAHIINDIA.NS', 'GRANULES.NS', 'NAVA.NS', 'GSFC.NS', 'ALOKINDS.NS', 'CENTRALBK.NS', 'BANCOINDIA.NS', 
@@ -43,7 +48,68 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 
 def get_ist_time():
     return datetime.now(IST)
+  
+def load_inactive_stocks():
+    """Load inactive stocks from file"""
+    global inactive_stocks
+    try:
+        if os.path.exists(INACTIVE_STOCKS_FILE):
+            with open(INACTIVE_STOCKS_FILE, 'r') as f:
+                inactive_stocks = json.load(f)
+                return inactive_stocks
+    except Exception as e:
+        print(f"Error loading inactive stocks: {e}")
+    return {}
 
+def save_inactive_stocks():
+    """Save inactive stocks to file"""
+    try:
+        with open(INACTIVE_STOCKS_FILE, 'w') as f:
+            json.dump(inactive_stocks, f, indent=2)
+    except Exception as e:
+        print(f"Error saving inactive stocks: {e}")
+
+def mark_stock_inactive(ticker):
+    """Mark a stock as inactive/delisted"""
+    global inactive_stocks
+    today = datetime.now().strftime('%Y-%m-%d')
+    
+    if ticker in inactive_stocks:
+        inactive_stocks[ticker]['fail_count'] += 1
+        inactive_stocks[ticker]['last_checked'] = today
+    else:
+        inactive_stocks[ticker] = {
+            'last_checked': today,
+            'fail_count': 1,
+            'marked_inactive': today
+        }
+    
+    save_inactive_stocks()
+    return True
+
+def is_stock_inactive(ticker, max_failures=3):
+    """Check if a stock is marked as inactive (too many failures)"""
+    global inactive_stocks
+    
+    if ticker not in inactive_stocks:
+        return False
+    
+    # If marked inactive less than 30 days ago, skip it
+    last_checked = datetime.strptime(inactive_stocks[ticker]['last_checked'], '%Y-%m-%d')
+    days_since_check = (datetime.now() - last_checked).days
+    
+    if inactive_stocks[ticker]['fail_count'] >= max_failures and days_since_check < 30:
+        return True
+    
+    # Re-check after 30 days
+    if days_since_check >= 30:
+        # Reset for re-check
+        inactive_stocks[ticker]['fail_count'] = 1
+        inactive_stocks[ticker]['last_checked'] = datetime.now().strftime('%Y-%m-%d')
+        save_inactive_stocks()
+    
+    return False
+  
 def load_trading_log():
     """Load trading log from Excel file"""
     if os.path.exists(LOG_FILE):
@@ -101,20 +167,28 @@ def save_trading_log(df):
         return False
 
 def fetch_latest_data(ticker, period="1y", interval="1d"):
-    """Fetch stock data with enhanced error handling and retry logic
-    (YOUR ORIGINAL FUNCTION - COMPLETELY UNCHANGED)"""
+    """Fetch stock data with failure tracking"""
     max_retries = 1
     retry_delay = 1
+
+    # Quick check: skip if stock is marked as inactive
+    if is_stock_inactive(ticker):
+        return pd.DataFrame()
 
     for attempt in range(max_retries):
         try:
             stock = yf.Ticker(ticker)
             df = stock.history(period=period, interval=interval)
 
-            if df.empty:
+            # If data is empty or too small, mark as potential delisting
+            if df.empty or len(df) < 10:
                 if attempt < max_retries - 1:
                     time.sleep(retry_delay)
                     continue
+                
+                # Mark as potential delisting after final failure
+                mark_stock_inactive(ticker)
+                print(f"  ⚠️  {ticker}: Insufficient data - marked for review")
                 return pd.DataFrame()
 
             df = df.reset_index()
@@ -128,14 +202,22 @@ def fetch_latest_data(ticker, period="1y", interval="1d"):
             # Clean data
             df = df.dropna()
             
-            #print(f"Data fetched for {ticker} - {len(df)} rows")
+            # Success - remove from inactive list if present
+            if ticker in inactive_stocks:
+                # If we successfully fetched data, remove from inactive list
+                del inactive_stocks[ticker]
+                save_inactive_stocks()
+            
             return df
             
         except Exception as e:
             if attempt < max_retries - 1:
                 time.sleep(retry_delay * (attempt + 1))
             else:
+                # Mark as inactive on final exception
+                mark_stock_inactive(ticker)
                 return pd.DataFrame()
+              
 
 def fetch_live_price(ticker):
     """Fetch current live price for monitoring"""
@@ -341,7 +423,16 @@ def run_discovery_mode():
     active_tickers = []
     inactive_tickers = []
     
+    load_inactive_stocks()
+    skipped_inactive = 0
+    
     for ticker in nse_tickers:
+        # Quick skip check
+        if is_stock_inactive(ticker):
+            skipped_inactive += 1
+            continue
+        
+        print(f"Analyzing {ticker}...")
         df = fetch_latest_data(ticker, period="1mo", interval="1d")
         if df.empty or len(df) < 5:
             inactive_tickers.append(ticker)
@@ -466,7 +557,35 @@ def run_discovery_mode():
         print("No valid buy signals found today (none met probability thresholds).")
     
     print(f"{'='*60}")
-
+  
+def cleanup_inactive_stocks():
+    """Remove old inactive entries and create updated ticker list"""
+    global inactive_stocks, nse_tickers
+    
+    load_inactive_stocks()
+    
+    # Get stocks inactive for more than 60 days (likely permanently delisted)
+    old_inactive = []
+    today = datetime.now()
+    
+    for ticker, data in list(inactive_stocks.items()):
+        last_checked = datetime.strptime(data['last_checked'], '%Y-%m-%d')
+        days_inactive = (today - last_checked).days
+        
+        if days_inactive > 60 and data['fail_count'] >= 3:
+            old_inactive.append(ticker)
+    
+    # Remove from main ticker list
+    if old_inactive:
+        nse_tickers = [t for t in nse_tickers if t not in old_inactive]
+        print(f"Removed {len(old_inactive)} permanently inactive stocks: {old_inactive}")
+        
+        # Save updated ticker list
+        with open("nse_active_tickers.py", "w") as f:
+            f.write(f"nse_tickers = {nse_tickers}\n")
+    
+    return old_inactive
+  
 def calculate_profits(df_log):
     """Calculate today's profit and overall profit with accuracy metrics"""
     today_str = get_ist_time().strftime('%Y-%m-%d')
@@ -819,6 +938,17 @@ def main():
     current_time_str = get_ist_time().strftime('%H:%M')
     current_hour = get_ist_time().hour
     current_minute = get_ist_time().minute
+
+    # Load inactive stocks at startup
+    load_inactive_stocks()
+    
+    # Weekly cleanup (run on Mondays)
+    if get_ist_time().weekday() == 0:  # Monday
+        print(">> Running weekly inactive stocks cleanup...")
+        removed = cleanup_inactive_stocks()
+        if removed:
+            print(f"  Removed {len(removed)} permanently inactive stocks")
+
     
     print(f"\n{'='*80}")
     print(f"QUANT SIGNALS BOT - {today_str} {current_time_str} IST")
