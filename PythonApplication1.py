@@ -329,57 +329,38 @@ def run_discovery_mode():
         # Use your EXACT original analysis logic
         df, filtered_buy, _, conf_buy, conf_sell, df_tomorrow, today_prediction = analyze_stock(df)
 
-        if df_tomorrow.empty:
-            print(f"  ✗ No prediction data for {ticker}")
-            continue
+        if not df.empty:
 
-        # FIXED LOGIC: Check both prediction AND probability threshold
-        tomorrow_buy_prob = df_tomorrow['Buy_Prob'].iloc[0]
-        tomorrow_prediction = df_tomorrow['ML_Prediction'].iloc[0]
-        current_price = df['Close'].iloc[-1] if not df.empty else 0
-        
-        # FIXED: Proper signal classification with probability thresholds
-        if tomorrow_prediction == 1 and tomorrow_buy_prob >= strong_buy_threshold:
-            results.append((
-                ticker,
-                tomorrow_buy_prob,
-                current_price,
-                tomorrow_prediction,
-                "STRONG_BUY"
-            ))
-            print(f"  ✅ STRONG BUY Signal: {ticker}, Probability: {tomorrow_buy_prob:.4f}")
-            
-        elif tomorrow_prediction == 1 and tomorrow_buy_prob >= buy_threshold:
-            results.append((
-                ticker,
-                tomorrow_buy_prob, 
-                current_price,
-                tomorrow_prediction,
-                "BUY"
-            ))
-            print(f"  ✓ BUY Signal: {ticker}, Probability: {tomorrow_buy_prob:.4f}")
-            
-        elif tomorrow_prediction == 1 and tomorrow_buy_prob >= 0.5:
-            results.append((
-                ticker,
-                tomorrow_buy_prob, 
-                current_price,
-                tomorrow_prediction,
-                "BUY"
-            ))
-            print(f"  ⚠️  WEAK BUY (Ignored): {ticker}, Probability: {tomorrow_buy_prob:.4f} (below {buy_threshold} threshold)")
-            
-        elif tomorrow_prediction == 1:
-            print(f"  ❌ FALSE BUY (Ignored): {ticker}, Probability: {tomorrow_buy_prob:.4f} (too low, should be SELL)")
-            
-        elif tomorrow_prediction == 0 and tomorrow_buy_prob <= 0.3:
-            print(f"  ✓ STRONG SELL: {ticker}, Buy Probability: {tomorrow_buy_prob:.4f}")
-            
-        elif tomorrow_prediction == 0:
-            print(f"  ✓ SELL: {ticker}, Buy Probability: {tomorrow_buy_prob:.4f}")
-            
+            try:
+                latest_row = df.iloc[[-1]]  # Select the last row
+                #print(latest_row)
+                high_conf_buy = latest_row[
+                (latest_row['ML_Prediction'] == 1) &
+                (latest_row['Buy_Prob'] > buy_threshold) 
+                #(latest_row['Volume_Trend']) &
+                #(latest_row['Validated_Buy'])
+                ]
+            except KeyError as e:
+                #print(f"Error: {e}")
+                #print(latest_row.columns)
+                FailureCount+=1
+                #print(FailureCount)
+                high_conf_buy = False
         else:
-            print(f"  ✗ No clear signal: {ticker}, Prediction: {tomorrow_prediction}, Prob: {tomorrow_buy_prob:.4f}")
+            count+=1
+            #print("The DataFrame is empty. No rows to select.",count)
+            high_conf_buy = False
+
+        if isinstance(high_conf_buy, pd.DataFrame) and not high_conf_buy.empty:
+            if 'ML_Prediction' in high_conf_buy.columns and (high_conf_buy['ML_Prediction'] == True).any():
+                # Proceed with logic
+                # Rest of the code
+                results.append((
+                    ticker,
+                    df_tomorrow['Buy_Prob'].iloc[0],
+                    df['Close'].iloc[-1],
+                    df_tomorrow['ML_Prediction'].iloc[0]
+                ))
 
     # Your original sorting logic - but now only including proper buy signals
     top_buys = sorted(results, key=lambda x: x[1], reverse=True)[:50]
