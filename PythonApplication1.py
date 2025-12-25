@@ -62,7 +62,26 @@ def load_trading_log():
         'PnL', 'Status', 'Buy_Prob', 'Sell_Signal_Time', 'Investment_Amount',
         'Profit_Amount', 'Return_Percentage'
     ])
-
+  
+def is_stock_active(ticker, test_period="1mo"):
+    """Check if a stock is still active/trading by fetching recent data."""
+    try:
+        stock_data = yf.Ticker(ticker)
+        hist = stock_data.history(period=test_period, interval="1d")
+        
+        # Check if data is empty or has very few rows
+        if hist.empty or len(hist) < 2:
+            return False
+            
+        # Check if recent data has meaningful values
+        if hist['Close'].isnull().all() or hist['Volume'].iloc[-1] == 0:
+            return False
+            
+        return True
+    except Exception as e:
+        print(f"  ⚠️  Validation error for {ticker}: {e}")
+        return False
+      
 def save_trading_log(df):
     """Save trading log to Excel file"""
     try:
@@ -315,15 +334,42 @@ def run_discovery_mode():
     """Run at 9:30 AM - Discover new buy signals using your original logic"""
     print(">> MODE: DISCOVERY (9:30 AM) - Analyzing full market with ORIGINAL ML logic")
     
+    # Optional: Pre-filter active stocks
+    print(f"Pre-checking {len(nse_tickers)} tickers for active status...")
+    
     results = []
-    count = 0
-    FailureCount = 0
+    active_tickers = []
+    inactive_tickers = []
     
     for ticker in nse_tickers:
+        df = fetch_latest_data(ticker, period="1mo", interval="1d")
+        if df.empty or len(df) < 5:
+            inactive_tickers.append(ticker)
+            print(f"  ⚠️  Skipping {ticker} - insufficient data (possibly delisted)")
+        else:
+            active_tickers.append(ticker)
+    
+    print(f"\nActive stocks: {len(active_tickers)}, Inactive/delisted: {len(inactive_tickers)}")
+    
+    # Log inactive tickers for review
+    if inactive_tickers:
+        with open("inactive_tickers.log", "a") as f:
+            today = datetime.now().strftime('%Y-%m-%d')
+            f.write(f"{today}: {', '.join(inactive_tickers)}\n")
+    
+    # Now analyze only active stocks
+    for ticker in active_tickers:
         print(f"Analyzing {ticker}...")
         df = fetch_latest_data(ticker, period="1y", interval="1d")
+        
+        # Double-check data quality
         if df.empty:
-            print(f"  ✗ Skipping {ticker} - no data")
+            print(f"  ✗ Skipping {ticker} - no yearly data available")
+            continue
+            
+        # Check data sufficiency for ML
+        if len(df) < 50:  # Minimum data points for meaningful analysis
+            print(f"  ⚠️  Skipping {ticker} - insufficient historical data ({len(df)} rows)")
             continue
 
         # Use your EXACT original analysis logic
@@ -363,7 +409,7 @@ def run_discovery_mode():
                 ))
 
     # Your original sorting logic - but now only including proper buy signals
-    top_buys = sorted(results, key=lambda x: x[1], reverse=True)[:50]
+    top_buys = sorted(results, key=lambda x: x[1], reverse=True)[:30]
     
     print(f"\n{'='*60}")
     print("DISCOVERY SUMMARY")
