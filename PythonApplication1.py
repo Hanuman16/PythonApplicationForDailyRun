@@ -761,16 +761,16 @@ def main():
     todays_trades = df_log[df_log['Date'] == today_str]
     
     # Check if this is the last run of the day (3:00 PM)
-    is_last_run = (current_hour == 15 and current_minute == 0)
+    is_first_run = (current_hour >= 9 and current_hour <= 10 and current_minute >= 0)
     
     # AUTO-RESET: If market is closed (after 3:30 PM IST), reset for next day
-    # if current_hour > 15 or (current_hour == 15 and current_minute >= 30):
-    #     print(">> Market closed - resetting for next day...")
-    #     df_log = df_log[df_log['Date'] != today_str]
-    #     save_trading_log(df_log)
-    #     todays_trades = pd.DataFrame()
-    #     print("✓ Reset complete - ready for discovery mode tomorrow")
-    #     return
+    if current_hour > 15 or (current_hour == 15 and current_minute >= 30):
+        print(">> Market closed - resetting for next day...")
+        df_log = df_log[df_log['Date'] != today_str]
+        save_trading_log(df_log)
+        todays_trades = pd.DataFrame()
+        print("✓ Reset complete - ready for discovery mode tomorrow")
+        return
     
     if todays_trades.empty:
         # DISCOVERY MODE: No trades for today yet
@@ -782,7 +782,7 @@ def main():
         run_monitoring_mode()
     
     # Send daily summary only at the last run (3:00 PM)
-    if is_last_run:
+    if is_first_run:
         print(">> SENDING DAILY SUMMARY REPORT")
         df_log = load_trading_log()  # Reload to get latest data
         recipients_env = os.getenv("MAIL_RECIPIENTS", "")
