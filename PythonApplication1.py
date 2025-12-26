@@ -329,97 +329,76 @@ def run_discovery_mode():
         df, filtered_buy, _, conf_buy, conf_sell, df_tomorrow, today_prediction = analyze_stock(df)
 
         if not df.empty:
-
             try:
                 latest_row = df.iloc[[-1]]  # Select the last row
-                #print(latest_row)
                 high_conf_buy = latest_row[
-                (latest_row['ML_Prediction'] == 1) &
-                (latest_row['Buy_Prob'] > buy_threshold) 
-                #(latest_row['Volume_Trend']) &
-                #(latest_row['Validated_Buy'])
+                    (latest_row['ML_Prediction'] == 1) &
+                    (latest_row['Buy_Prob'] > buy_threshold) 
                 ]
             except KeyError as e:
-                #print(f"Error: {e}")
-                #print(latest_row.columns)
-                FailureCount+=1
-                #print(FailureCount)
+                FailureCount += 1
                 high_conf_buy = False
         else:
-            count+=1
-            #print("The DataFrame is empty. No rows to select.",count)
+            count += 1
             high_conf_buy = False
 
+        # Your original logic for determining if it's a buy
         if isinstance(high_conf_buy, pd.DataFrame) and not high_conf_buy.empty:
             if 'ML_Prediction' in high_conf_buy.columns and (high_conf_buy['ML_Prediction'] == True).any():
-                # Proceed with logic
-                # Rest of the code
                 results.append((
                     ticker,
                     df_tomorrow['Buy_Prob'].iloc[0],
                     df['Close'].iloc[-1],
                     df_tomorrow['ML_Prediction'].iloc[0]
                 ))
+                print(f"  ✓ BUY Signal: {ticker}, Probability: {df_tomorrow['Buy_Prob'].iloc[0]:.4f}")
+            else:
+                print(f"  ✗ No buy: {ticker}")
+        else:
+            print(f"  ✗ No buy: {ticker}")
 
-    # Your original sorting logic - but now only including proper buy signals
-    top_buys = sorted(results, key=lambda x: x[1], reverse=True)[:50]
+    # Your original sorting logic
+    top_buys = sorted(results, key=lambda x: x[1], reverse=True)[:10]
     
     print(f"\n{'='*60}")
     print("DISCOVERY SUMMARY")
     print(f"{'='*60}")
     print(f"Stocks analyzed: {len(nse_tickers)}")
-    print(f"Valid buy signals found: {len(results)}")
+    print(f"Buy signals found: {len(results)}")
     print(f"Top buys selected: {len(top_buys)}")
     
-    # Debug: Show probability distribution
-    if results:
-        probs = [r[1] for r in results]
-        print(f"Buy probability range: {min(probs):.4f} - {max(probs):.4f}")
-        print(f"Average buy probability: {np.mean(probs):.4f}")
-    
-    # Save to trading log - ONLY for valid buy signals
+    # Save to trading log
     if top_buys:
         df_log = load_trading_log()
         today_str = get_ist_time().strftime('%Y-%m-%d')
         
         new_entries = []
-        for ticker, prob, price, pred, signal_type in top_buys:
-            # Only add STRONG_BUY and BUY signals (not weak ones)
-            if signal_type in ["STRONG_BUY", "BUY"]:
-                new_entries.append({
-                    'Date': today_str,
-                    'Ticker': ticker,
-                    'Buy_Price': price,
-                    'Current_Price': price,
-                    'Sell_Price': 0.0,
-                    'PnL': 0.0,
-                    'Status': 'OPEN',
-                    'Buy_Prob': prob,
-                    'Signal_Type': signal_type,
-                    'Sell_Signal_Time': '',
-                    'Investment_Amount': 100000,  # 1 lakh per stock
-                    'Profit_Amount': 0.0,
-                    'Return_Percentage': 0.0
-                })
-                print(f"  ➕ Adding to portfolio: {ticker} ({signal_type}, Prob: {prob:.4f})")
+        for ticker, prob, price, pred in top_buys:
+            new_entries.append({
+                'Date': today_str,
+                'Ticker': ticker,
+                'Buy_Price': price,
+                'Current_Price': price,
+                'Sell_Price': 0.0,
+                'PnL': 0.0,
+                'Status': 'OPEN',
+                'Buy_Prob': prob,
+                'Sell_Signal_Time': ''
+            })
         
-        if new_entries:
-            new_df = pd.DataFrame(new_entries)
-            df_log = pd.concat([df_log, new_df], ignore_index=True)
-            save_trading_log(df_log)
-        else:
-            print("  ⚠️  No valid buy signals met probability thresholds")
+        new_df = pd.DataFrame(new_entries)
+        df_log = pd.concat([df_log, new_df], ignore_index=True)
+        save_trading_log(df_log)
         
         # Your original print output
-        print("\nTop Buy Signals Selected for Tomorrow:")
-        for ticker, prob, price, pred, signal_type in top_buys:
-            if signal_type in ["STRONG_BUY", "BUY"]:
-                print(f"  {ticker}: {signal_type}, Probability = {prob:.4f}, Today's Close = {price:.2f}")
+        print("\nTop 10 Predicted Strong Buy Signals for Tomorrow:")
+        for ticker, prob, price, pred in top_buys:
+            print(f"{ticker}: Buy Probability = {prob:.4f}, Today's Close = {price:.2f}, Predicted Class = {pred}")
     else:
-        print("No valid buy signals found today (none met probability thresholds).")
+        print("No strong buy signals found today.")
     
     print(f"{'='*60}")
-
+  
 def calculate_profits(df_log):
     """Calculate today's profit and overall profit with accuracy metrics"""
     today_str = get_ist_time().strftime('%Y-%m-%d')
